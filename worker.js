@@ -363,9 +363,7 @@ async function handleRequest(request) {
 
         // 检查 IP 是否来自中国
         const isChina = cf && cf.country === 'CN';
-        const jsdelivrHost = isChina
-            ? 'jsd.onmicrosoft.cn'
-            : 'cdn.jsdelivr.net';
+        const jsdelivrHost = 'jsd.nmmsl.top';
 
         if (isHtml) {
             const html = `<!DOCTYPE html>

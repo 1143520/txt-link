@@ -6,7 +6,9 @@
 ![ff](https://jsd.1143520.xyz/gh/manji1143/picx-images-hosting@master/paste/picx-image.4xumrl8pc3.png)
 
 ![hh](https://jsd.1143520.xyz/gh/manji1143/picx-images-hosting@master/paste/picx-image.77dnb2v6gf.avif)
-已知bug
+
+已知bug:
+
 1、gist代码编辑器使用的vue组件
 https://cdn.jsdelivr.net/gh/justcaliturner/simple-code-editor@master/browser/deps/vue@3.3.4.min.js
 对于某些js代码会强行渲染，暂时没有排查出是哪些转义被遗漏了

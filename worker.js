@@ -193,12 +193,131 @@ async function handleRequest(request) {
     if (url.pathname === '/set') {
         const { key, value } = await readRequestBody(request);
         await NOTE.put(key, value);
-        let res =
-            `原始内容: <a href = "/${key}" target="_blank">/${key}</a>` +
-            `<br/>Html: <a href = "/${key}.html" target="_blank">/${key}.html</a>` +
-            `<br/>Markdown: <a href = "/${key}.md" target="_blank">/${key}.md</a>` +
-            `<br/>Gist: <a href = "/${key}.gist" target="_blank">/${key}.gist</a>`;
-        return new Response(res, { headers: corsHeaders });
+        const currentUrl = new URL(request.url);
+        const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+        let res = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>分享结果</title>
+            <style>
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                    background: #161b22;
+                    border-radius: 6px;
+                    overflow: hidden;
+                }
+                th, td {
+                    padding: 12px;
+                    text-align: left;
+                    border: 1px solid #30363d;
+                }
+                th {
+                    background: #21262d;
+                    color: #c9d1d9;
+                }
+                td {
+                    color: #c9d1d9;
+                }
+                .qr-container {
+                    display: flex;
+                    justify-content: center;
+                    gap: 20px;
+                    flex-wrap: wrap;
+                    margin-top: 20px;
+                }
+                .qr-item {
+                    text-align: center;
+                    background: #161b22;
+                    padding: 15px;
+                    border-radius: 6px;
+                    border: 1px solid #30363d;
+                }
+                .qr-item p {
+                    margin: 5px 0;
+                    color: #c9d1d9;
+                }
+                .qr-item img {
+                    width: 128px;
+                    height: 128px;
+                    display: block;
+                    margin: 0 auto;
+                }
+                a {
+                    color: #58a6ff;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background: #0d1117;
+                    color: #c9d1d9;
+                }
+            </style>
+        </head>
+        <body>
+        <table>
+            <thead>
+                <tr>
+                    <th>格式</th>
+                    <th>链接</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>原始内容</td>
+                    <td><a href="/${key}" target="_blank">/${key}</a></td>
+                    <td>纯文本格式</td>
+                </tr>
+                <tr>
+                    <td>HTML</td>
+                    <td><a href="/${key}.html" target="_blank">/${key}.html</a></td>
+                    <td>带代码高亮的 HTML 格式</td>
+                </tr>
+                <tr>
+                    <td>Markdown</td>
+                    <td><a href="/${key}.md" target="_blank">/${key}.md</a></td>
+                    <td>渲染后的 Markdown 格式</td>
+                </tr>
+                <tr>
+                    <td>Gist</td>
+                    <td><a href="/${key}.gist" target="_blank">/${key}.gist</a></td>
+                    <td>类 Gist 编辑器格式</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="qr-container">
+            <div class="qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(baseUrl + '/' + key)}&bgcolor=0d1117&color=c9d1d9" alt="原始内容二维码">
+                <p>原始内容</p>
+            </div>
+            <div class="qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(baseUrl + '/' + key + '.html')}&bgcolor=0d1117&color=c9d1d9" alt="HTML二维码">
+                <p>HTML</p>
+            </div>
+            <div class="qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(baseUrl + '/' + key + '.md')}&bgcolor=0d1117&color=c9d1d9" alt="Markdown二维码">
+                <p>Markdown</p>
+            </div>
+            <div class="qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(baseUrl + '/' + key + '.gist')}&bgcolor=0d1117&color=c9d1d9" alt="Gist二维码">
+                <p>Gist</p>
+            </div>
+        </div>
+        </body>
+        </html>`;
+        return new Response(res, { headers: { ...corsHeaders, 'content-type': 'text/html;charset=UTF-8' } });
     }
 
     if (url.pathname === '/list') {
@@ -363,7 +482,7 @@ async function handleRequest(request) {
 
         // 检查 IP 是否来自中国
         const isChina = cf && cf.country === 'CN';
-        const jsdelivrHost = 'jsd.nmmsl.top';
+        const jsdelivrHost = 'jsd.chatbtc.cn.eu.org';
 
         if (isHtml) {
             const html = `<!DOCTYPE html>
@@ -508,7 +627,10 @@ async function handleRequest(request) {
                 },
             });
         } else if (isMD) {
-            const escapedValue = value.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+            const escapedValue = value.replace(/`/g, '\\`').replace(/\$/g, '\\$')
+                .replace(/\\/g, '\\\\')  // 转义反斜杠
+                .replace(/\n/g, '\\n')   // 转义换行符
+                .replace(/\r/g, '\\r');  // 转义回车符
             const html = `<!doctype html>
                         <html>
                         <head>
@@ -544,6 +666,7 @@ async function handleRequest(request) {
                               border: 1px solid #30363d;
                               padding: 16px;
                               margin-bottom: 16px;
+                              position: relative;
                             }
                             .markdown-body pre code {
                               background-color: transparent !important;
@@ -590,7 +713,7 @@ async function handleRequest(request) {
                               position: absolute;
                               right: 8px;
                               top: 8px;
-                              background: #2ea44f;
+                              background: #238636;
                               border: 1px solid rgba(240,246,252,0.1);
                               border-radius: 6px;
                               color: #fff;
@@ -601,13 +724,10 @@ async function handleRequest(request) {
                               transition: opacity 0.3s;
                             }
                             .copy-button:hover {
-                              background: #2c974b;
+                              background: #2ea043;
                             }
                             .copy-button.copied {
                               background: #388bfd;
-                            }
-                            pre {
-                              position: relative;
                             }
                             pre:hover .copy-button {
                               opacity: 1;
@@ -646,33 +766,34 @@ async function handleRequest(request) {
                                 return code;
                               },
                               breaks: true,
-                              gfm: true
+                              gfm: true,
+                              mangle: false,
+                              headerIds: false
                             });
-                            document.getElementById('content').innerHTML =
-                              marked.parse(\`${escapedValue}\`);
+                            
+                            const content = \`${escapedValue}\`;
+                            document.getElementById('content').innerHTML = marked.parse(content);
                             
                             // 添加复制按钮到每个代码块
                             document.querySelectorAll('pre code').forEach((block) => {
-                              hljs.highlightBlock(block);
-                              
                               const pre = block.parentElement;
                               const button = document.createElement('button');
                               button.className = 'copy-button';
-                              button.textContent = 'Copy';
+                              button.textContent = '复制';
                               
                               button.addEventListener('click', async () => {
                                 try {
                                   await navigator.clipboard.writeText(block.textContent);
-                                  button.textContent = 'Copied!';
+                                  button.textContent = '已复制!';
                                   button.classList.add('copied');
                                   setTimeout(() => {
-                                    button.textContent = 'Copy';
+                                    button.textContent = '复制';
                                     button.classList.remove('copied');
                                   }, 2000);
                                 } catch (err) {
-                                  button.textContent = 'Failed!';
+                                  button.textContent = '复制失败!';
                                   setTimeout(() => {
-                                    button.textContent = 'Copy';
+                                    button.textContent = '复制';
                                   }, 2000);
                                 }
                               });
